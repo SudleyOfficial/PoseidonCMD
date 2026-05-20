@@ -1,0 +1,1939 @@
+-- // Poseidon Terminal
+-- // v1.0.0
+
+local Players         = game:GetService("Players")
+local TweenService    = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui         = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- // Helpers
+local function Tween(obj, props, t, style, dir)
+	TweenService:Create(obj, TweenInfo.new(t or 0.25, style or Enum.EasingStyle.Quint, dir or Enum.EasingDirection.Out), props):Play()
+end
+
+local function Corner(r, p)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, r)
+	c.Parent = p
+end
+
+local function MakeDraggable(frame, handle)
+	local drag, start, origin
+	handle.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
+			drag = true; start = i.Position; origin = frame.Position
+		end
+	end)
+	handle.InputEnded:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
+	end)
+	UserInputService.InputChanged:Connect(function(i)
+		if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+			local d = i.Position - start
+			frame.Position = UDim2.new(origin.X.Scale, origin.X.Offset + d.X, origin.Y.Scale, origin.Y.Offset + d.Y)
+		end
+	end)
+end
+
+-- // Palette
+local C = {
+	Bg        = Color3.fromRGB(6,   9,  14),
+	BgPanel   = Color3.fromRGB(10,  14, 20),
+	Border    = Color3.fromRGB(20,  60, 60),
+	Accent    = Color3.fromRGB(0,   210, 180),
+	AccentDim = Color3.fromRGB(0,   120, 105),
+	Green     = Color3.fromRGB(50,  220,150),
+	Red       = Color3.fromRGB(255, 80, 100),
+	Yellow    = Color3.fromRGB(255, 190, 50),
+	Text      = Color3.fromRGB(180, 240, 235),
+	Dim       = Color3.fromRGB(70,  150, 140),
+	Muted     = Color3.fromRGB(30,  90,  85),
+}
+
+-- // Destroy existing
+pcall(function()
+	local old = CoreGui:FindFirstChild("PoseidonTerm")
+	if old then old:Destroy() end
+end)
+
+-- // Root
+local Gui = Instance.new("ScreenGui")
+Gui.Name            = "PoseidonTerm"
+Gui.ResetOnSpawn    = false
+Gui.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+Gui.DisplayOrder    = 999
+pcall(function() Gui.Parent = CoreGui end)
+if not Gui.Parent then Gui.Parent = LocalPlayer.PlayerGui end
+
+-- // Window frame
+local WIN_W, WIN_H = 640, 430
+local Win = Instance.new("Frame")
+Win.Name              = "Window"
+Win.Size              = UDim2.new(0, WIN_W, 0, WIN_H)
+Win.Position          = UDim2.new(0.5, -WIN_W/2, 0.5, -WIN_H/2)
+Win.BackgroundColor3  = C.Bg
+Win.BorderSizePixel   = 0
+Win.ZIndex            = 2
+Win.ClipsDescendants  = true
+Win.Parent            = Gui
+Corner(10, Win)
+
+local WinStroke = Instance.new("UIStroke")
+WinStroke.Thickness = 1
+WinStroke.Color     = C.Border
+WinStroke.Parent    = Win
+
+-- Top accent bar
+local ABar = Instance.new("Frame")
+ABar.Size            = UDim2.new(1, 0, 0, 2)
+ABar.BackgroundColor3 = C.Accent
+ABar.BorderSizePixel = 0
+ABar.ZIndex          = 10
+ABar.Parent          = Win
+local ABarGrad = Instance.new("UIGradient")
+ABarGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,   C.AccentDim),
+	ColorSequenceKeypoint.new(0.5, C.Accent),
+	ColorSequenceKeypoint.new(1,   C.AccentDim),
+})
+ABarGrad.Parent = ABar
+
+-- // Title bar
+local TBar = Instance.new("Frame")
+TBar.Size            = UDim2.new(1, 0, 0, 36)
+TBar.Position        = UDim2.new(0, 0, 0, 2)
+TBar.BackgroundColor3 = C.BgPanel
+TBar.BorderSizePixel = 0
+TBar.ZIndex          = 3
+TBar.Parent          = Win
+
+local TBarSep = Instance.new("Frame")
+TBarSep.Size            = UDim2.new(1, 0, 0, 1)
+TBarSep.Position        = UDim2.new(0, 0, 1, 0)
+TBarSep.BackgroundColor3 = C.Border
+TBarSep.BorderSizePixel = 0
+TBarSep.ZIndex          = 4
+TBarSep.Parent          = TBar
+
+MakeDraggable(Win, TBar)
+
+-- Hex logo
+local Logo = Instance.new("ImageLabel")
+Logo.Size               = UDim2.new(0, 20, 0, 20)
+Logo.Position           = UDim2.new(0, 12, 0.5, -10)
+Logo.BackgroundTransparency = 1
+Logo.Image              = "rbxassetid://106194991700717"
+Logo.ZIndex             = 5
+Logo.Parent             = TBar
+
+-- Title
+local TitleLbl = Instance.new("TextLabel")
+TitleLbl.Size               = UDim2.new(0, 100, 1, 0)
+TitleLbl.Position           = UDim2.new(0, 36, 0, 0)
+TitleLbl.BackgroundTransparency = 1
+TitleLbl.Text               = "POSEIDON"
+TitleLbl.TextColor3         = C.Text
+TitleLbl.TextSize           = 12
+TitleLbl.Font               = Enum.Font.GothamBold
+TitleLbl.TextXAlignment     = Enum.TextXAlignment.Left
+TitleLbl.ZIndex             = 5
+TitleLbl.Parent             = TBar
+
+-- Version tag
+local VerLbl = Instance.new("TextLabel")
+VerLbl.Size               = UDim2.new(0, 180, 1, 0)
+VerLbl.Position           = UDim2.new(0, 138, 0, 0)
+VerLbl.BackgroundTransparency = 1
+VerLbl.Text               = "terminal  v1.0.0"
+VerLbl.TextColor3         = C.Muted
+VerLbl.TextSize           = 11
+VerLbl.Font               = Enum.Font.Code
+VerLbl.TextXAlignment     = Enum.TextXAlignment.Left
+VerLbl.ZIndex             = 5
+VerLbl.Parent             = TBar
+
+-- Window control buttons
+local function MakeWinBtn(col, offsetX, sym)
+	local b = Instance.new("TextButton")
+	b.Size            = UDim2.new(0, 13, 0, 13)
+	b.Position        = UDim2.new(1, offsetX, 0.5, -6)
+	b.BackgroundColor3 = col
+	b.BorderSizePixel = 0
+	b.Text            = ""
+	b.ZIndex          = 5
+	b.Parent          = TBar
+	Corner(7, b)
+
+	local s = Instance.new("TextLabel")
+	s.Size               = UDim2.new(1,0,1,0)
+	s.BackgroundTransparency = 1
+	s.Text               = sym
+	s.TextColor3         = Color3.fromRGB(0,0,0)
+	s.TextTransparency   = 0.35
+	s.TextSize           = 8
+	s.Font               = Enum.Font.GothamBold
+	s.ZIndex             = 6
+	s.Parent             = b
+	return b
+end
+
+local BtnClose = MakeWinBtn(C.Red,    -18, " ")
+local BtnMin   = MakeWinBtn(C.Yellow, -36, " ")
+
+local minimized = false
+BtnMin.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	Tween(Win, { Size = minimized and UDim2.new(0, WIN_W, 0, 39) or UDim2.new(0, WIN_W, 0, WIN_H) }, 0.22, Enum.EasingStyle.Quint)
+	Win.ClipsDescendants = false
+	TBar.ClipsDescendants = false
+	BtnClose.ZIndex = 20
+	BtnMin.ZIndex = 20
+	TBar.ZIndex = 20
+end)
+BtnClose.MouseButton1Click:Connect(function()
+	Tween(Win, { Size = UDim2.new(0, WIN_W, 0, 0) }, 0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+	task.delay(0.25, function() Gui:Destroy() end)
+end)
+
+-- // Output scroll area
+local Output = Instance.new("ScrollingFrame")
+Output.Name                = "Output"
+Output.Size                = UDim2.new(1, 0, 1, -82)
+Output.Position            = UDim2.new(0, 0, 0, 39)
+Output.BackgroundTransparency = 1
+Output.BorderSizePixel     = 0
+Output.ScrollBarThickness  = 3
+Output.ScrollBarImageColor3 = C.Muted
+Output.CanvasSize          = UDim2.new(0, 0, 0, 0)
+Output.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Output.ScrollingDirection  = Enum.ScrollingDirection.Y
+Output.ZIndex              = 3
+Output.Parent              = Win
+
+local OutLayout = Instance.new("UIListLayout")
+OutLayout.SortOrder  = Enum.SortOrder.LayoutOrder
+OutLayout.Padding    = UDim.new(0, 0)
+OutLayout.Parent     = Output
+
+local OutPad = Instance.new("UIPadding")
+OutPad.PaddingTop    = UDim.new(0, 10)
+OutPad.PaddingBottom = UDim.new(0, 8)
+OutPad.PaddingLeft   = UDim.new(0, 14)
+OutPad.PaddingRight  = UDim.new(0, 12)
+OutPad.Parent        = Output
+
+-- // Input bar
+local InputBar = Instance.new("Frame")
+InputBar.Size            = UDim2.new(1, 0, 0, 42)
+InputBar.Position        = UDim2.new(0, 0, 1, -42)
+InputBar.BackgroundColor3 = C.BgPanel
+InputBar.BorderSizePixel = 0
+InputBar.ZIndex          = 3
+InputBar.Parent          = Win
+
+local InputTopLine = Instance.new("Frame")
+InputTopLine.Size            = UDim2.new(1, 0, 0, 1)
+InputTopLine.BackgroundColor3 = C.Border
+InputTopLine.BorderSizePixel = 0
+InputTopLine.ZIndex          = 4
+InputTopLine.Parent          = InputBar
+
+-- Prompt label
+local PromptLbl = Instance.new("TextLabel")
+PromptLbl.Size               = UDim2.new(0, 0, 1, -1)
+PromptLbl.AutomaticSize      = Enum.AutomaticSize.X
+PromptLbl.Position           = UDim2.new(0, 12, 0, 1)
+PromptLbl.BackgroundTransparency = 1
+PromptLbl.Text               = LocalPlayer.Name .. "@poseidon "
+PromptLbl.TextColor3         = C.Accent
+PromptLbl.TextSize           = 13
+PromptLbl.Font               = Enum.Font.Code
+PromptLbl.TextXAlignment     = Enum.TextXAlignment.Left
+PromptLbl.ZIndex             = 5
+PromptLbl.Parent             = InputBar
+
+-- Actual text input
+local InputBox = Instance.new("TextBox")
+InputBox.Size               = UDim2.new(1, -200, 1, -1)
+InputBox.Position           = UDim2.new(0, 162, 0, 1)
+InputBox.BackgroundTransparency = 1
+InputBox.Text               = ""
+InputBox.PlaceholderText    = "enter command..."
+InputBox.PlaceholderColor3  = C.Muted
+InputBox.TextColor3         = C.Text
+InputBox.TextSize           = 13
+InputBox.Font               = Enum.Font.Code
+InputBox.TextXAlignment     = Enum.TextXAlignment.Left
+InputBox.ClearTextOnFocus   = false
+InputBox.ZIndex             = 5
+InputBox.Parent             = InputBar
+
+-- // ── Player List Panel (defined AFTER InputBox so it can reference it) ──
+
+local PANEL_W = 200
+local PlayerListPanel = Instance.new("Frame")
+PlayerListPanel.Name             = "PlayerListPanel"
+PlayerListPanel.Size             = UDim2.new(0, PANEL_W, 0, WIN_H)
+PlayerListPanel.Position         = UDim2.new(0.5, -WIN_W/2 + WIN_W + 4, 0.5, -WIN_H/2)
+PlayerListPanel.BackgroundColor3 = C.BgPanel
+PlayerListPanel.BorderSizePixel  = 0
+PlayerListPanel.Visible          = false
+PlayerListPanel.ZIndex           = 2
+PlayerListPanel.Parent           = Gui
+Corner(10, PlayerListPanel)
+
+local PLStroke = Instance.new("UIStroke")
+PLStroke.Thickness = 1
+PLStroke.Color     = C.Border
+PLStroke.Parent    = PlayerListPanel
+
+local PLABar = Instance.new("Frame")
+PLABar.Size             = UDim2.new(1, 0, 0, 2)
+PLABar.BackgroundColor3 = C.Accent
+PLABar.BorderSizePixel  = 0
+PLABar.ZIndex           = 10
+PLABar.Parent           = PlayerListPanel
+local PLABarGrad = Instance.new("UIGradient")
+PLABarGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,   C.AccentDim),
+	ColorSequenceKeypoint.new(0.5, C.Accent),
+	ColorSequenceKeypoint.new(1,   C.AccentDim),
+})
+PLABarGrad.Parent = PLABar
+
+local PLTBar = Instance.new("Frame")
+PLTBar.Size             = UDim2.new(1, 0, 0, 36)
+PLTBar.Position         = UDim2.new(0, 0, 0, 2)
+PLTBar.BackgroundColor3 = C.BgPanel
+PLTBar.BorderSizePixel  = 0
+PLTBar.ZIndex           = 3
+PLTBar.Parent           = PlayerListPanel
+
+local PLTBarSep = Instance.new("Frame")
+PLTBarSep.Size             = UDim2.new(1, 0, 0, 1)
+PLTBarSep.Position         = UDim2.new(0, 0, 1, 0)
+PLTBarSep.BackgroundColor3 = C.Border
+PLTBarSep.BorderSizePixel  = 0
+PLTBarSep.ZIndex           = 4
+PLTBarSep.Parent           = PLTBar
+
+local PLTitle = Instance.new("TextLabel")
+PLTitle.Size                = UDim2.new(1, -16, 1, 0)
+PLTitle.Position            = UDim2.new(0, 12, 0, 0)
+PLTitle.BackgroundTransparency = 1
+PLTitle.Text                = "PLAYERS"
+PLTitle.TextColor3          = C.Text
+PLTitle.TextSize            = 12
+PLTitle.Font                = Enum.Font.GothamBold
+PLTitle.TextXAlignment      = Enum.TextXAlignment.Left
+PLTitle.ZIndex              = 5
+PLTitle.Parent              = PLTBar
+
+local PLCount = Instance.new("TextLabel")
+PLCount.Size                = UDim2.new(0, 40, 1, 0)
+PLCount.Position            = UDim2.new(1, -52, 0, 0)
+PLCount.BackgroundTransparency = 1
+PLCount.Text                = "0"
+PLCount.TextColor3          = C.Muted
+PLCount.TextSize            = 11
+PLCount.Font                = Enum.Font.Code
+PLCount.TextXAlignment      = Enum.TextXAlignment.Right
+PLCount.ZIndex              = 5
+PLCount.Parent              = PLTBar
+
+local PLScroll = Instance.new("ScrollingFrame")
+PLScroll.Size                = UDim2.new(1, 0, 1, -39)
+PLScroll.Position            = UDim2.new(0, 0, 0, 39)
+PLScroll.BackgroundTransparency = 1
+PLScroll.BorderSizePixel     = 0
+PLScroll.ScrollBarThickness  = 3
+PLScroll.ScrollBarImageColor3 = C.Muted
+PLScroll.CanvasSize          = UDim2.new(0, 0, 0, 0)
+PLScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+PLScroll.ScrollingDirection  = Enum.ScrollingDirection.Y
+PLScroll.ZIndex              = 3
+PLScroll.Parent              = PlayerListPanel
+
+local PLLayout = Instance.new("UIListLayout")
+PLLayout.SortOrder = Enum.SortOrder.LayoutOrder
+PLLayout.Padding   = UDim.new(0, 0)
+PLLayout.Parent    = PLScroll
+
+local PLPad = Instance.new("UIPadding")
+PLPad.PaddingTop    = UDim.new(0, 8)
+PLPad.PaddingBottom = UDim.new(0, 8)
+PLPad.PaddingLeft   = UDim.new(0, 0)
+PLPad.PaddingRight  = UDim.new(0, 0)
+PLPad.Parent        = PLScroll
+
+local playerListOpen = false
+
+local function UpdatePanelPosition()
+	PlayerListPanel.Position = UDim2.new(
+		Win.Position.X.Scale,
+		Win.Position.X.Offset + WIN_W + 4,
+		Win.Position.Y.Scale,
+		Win.Position.Y.Offset
+	)
+end
+
+UserInputService.InputChanged:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseMovement and playerListOpen then
+		UpdatePanelPosition()
+	end
+end)
+
+local function BuildPlayerList()
+	for _, ch in ipairs(PLScroll:GetChildren()) do
+		if ch:IsA("TextButton") then ch:Destroy() end
+	end
+
+	local plrs = {}
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			table.insert(plrs, plr)
+		end
+	end
+
+	PLCount.Text = tostring(#plrs)
+
+	local order = 0
+	for _, plr in ipairs(plrs) do
+		order += 1
+		local row = Instance.new("TextButton")
+		row.Size               = UDim2.new(1, 0, 0, 52)
+		row.BackgroundTransparency = 1
+		row.BorderSizePixel    = 0
+		row.Text               = ""
+		row.LayoutOrder        = order
+		row.ZIndex             = 4
+		row.Parent             = PLScroll
+
+		row.MouseEnter:Connect(function()
+			row.BackgroundColor3 = C.Accent
+			Tween(row, { BackgroundTransparency = 0.85 }, 0.1)
+		end)
+		row.MouseLeave:Connect(function()
+			Tween(row, { BackgroundTransparency = 1 }, 0.1)
+		end)
+
+		local div = Instance.new("Frame")
+		div.Size             = UDim2.new(1, -24, 0, 1)
+		div.Position         = UDim2.new(0, 12, 1, -1)
+		div.BackgroundColor3 = C.Border
+		div.BorderSizePixel  = 0
+		div.ZIndex           = 5
+		div.Parent           = row
+
+		local dispLbl = Instance.new("TextLabel")
+		dispLbl.Size               = UDim2.new(1, -24, 0, 20)
+		dispLbl.Position           = UDim2.new(0, 12, 0, 8)
+		dispLbl.BackgroundTransparency = 1
+		dispLbl.Text               = "⏳ " .. plr.DisplayName
+		dispLbl.TextColor3         = C.Accent
+		dispLbl.TextSize           = 13
+		dispLbl.Font               = Enum.Font.GothamBold
+		dispLbl.TextXAlignment     = Enum.TextXAlignment.Left
+		dispLbl.TextTruncate       = Enum.TextTruncate.AtEnd
+		dispLbl.ZIndex             = 5
+		dispLbl.Parent             = row
+
+task.spawn(function()
+    local hasVoice = false
+    pcall(function()
+        -- Most reliable: AudioDeviceInput is added to players with VC enabled
+        hasVoice = plr:FindFirstChildWhichIsA("AudioDeviceInput") ~= nil
+    end)
+    -- Also try the async API as a secondary check
+    if not hasVoice then
+        pcall(function()
+            hasVoice = game:GetService("VoiceChatService"):IsVoiceEnabledForUserIdAsync(plr.UserId)
+        end)
+    end
+    -- Last resort: check character
+    if not hasVoice then
+        pcall(function()
+            hasVoice = plr.Character ~= nil and plr.Character:FindFirstChildWhichIsA("AudioDeviceInput") ~= nil
+        end)
+    end
+    if dispLbl and dispLbl.Parent then
+        dispLbl.Text = (hasVoice and "🎙 " or "🔇 ") .. plr.DisplayName
+    end
+end)
+
+		local userLbl = Instance.new("TextLabel")
+		userLbl.Size               = UDim2.new(1, -24, 0, 16)
+		userLbl.Position           = UDim2.new(0, 12, 0, 28)
+		userLbl.BackgroundTransparency = 1
+		userLbl.Text               = "@" .. plr.Name
+		userLbl.TextColor3         = C.Muted
+		userLbl.TextSize           = 11
+		userLbl.Font               = Enum.Font.Code
+		userLbl.TextXAlignment     = Enum.TextXAlignment.Left
+		userLbl.TextTruncate       = Enum.TextTruncate.AtEnd
+		userLbl.ZIndex             = 5
+		userLbl.Parent             = row
+
+		local capturedName = plr.Name
+		row.MouseButton1Click:Connect(function()
+			local current = InputBox.Text
+			if current ~= "" and not current:match("%s$") then
+				current = current .. " "
+			end
+			InputBox.Text = current .. capturedName
+			InputBox:CaptureFocus()
+			InputBox.CursorPosition = #InputBox.Text + 1
+		end)
+	end
+end
+
+-- // ── Core terminal engine ──────────────────────────────────────────
+
+local Commands    = {}
+local history     = {}
+local histIdx     = 0
+local lineOrder   = 0
+
+local function PrintLine(text, color)
+	lineOrder += 1
+	local row = Instance.new("Frame")
+	row.Size               = UDim2.new(1, 0, 0, 0)
+	row.AutomaticSize      = Enum.AutomaticSize.Y
+	row.BackgroundTransparency = 1
+	row.LayoutOrder        = lineOrder
+	row.ZIndex             = 3
+	row.Parent             = Output
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size               = UDim2.new(1, 0, 0, 0)
+	lbl.AutomaticSize      = Enum.AutomaticSize.Y
+	lbl.BackgroundTransparency = 1
+	lbl.Text               = text or ""
+	lbl.TextColor3         = color or C.Text
+	lbl.TextSize           = 13
+	lbl.Font               = Enum.Font.Code
+	lbl.TextXAlignment     = Enum.TextXAlignment.Left
+	lbl.TextWrapped        = true
+	lbl.ZIndex             = 4
+	lbl.Parent             = row
+
+	task.defer(function()
+		Output.CanvasPosition = Vector2.new(0, math.huge)
+	end)
+end
+
+local function PrintBlank()    PrintLine("") end
+local function PrintDiv()      PrintLine("────────────────────────────────────────────────────────", C.Muted) end
+local function PrintOk(msg)    PrintLine("  [  OK  ]  " .. msg, C.Green) end
+local function PrintErr(msg)   PrintLine("  [ ERR  ]  " .. msg, C.Red) end
+local function PrintWarn(msg)  PrintLine("  [ WARN ]  " .. msg, C.Yellow) end
+local function PrintInfo(msg)  PrintLine("  [ INFO ]  " .. msg, C.Dim) end
+
+local function RegisterCommand(name, desc, fn)
+	Commands[name:lower()] = { desc = desc or "", func = fn }
+end
+
+local function Execute(raw)
+	if not raw or raw:match("^%s*$") then return end
+
+	PrintLine(LocalPlayer.Name .. "@poseidon " .. raw, C.Dim)
+
+	table.insert(history, 1, raw)
+	if #history > 200 then table.remove(history) end
+	histIdx = 0
+
+	local parts = {}
+	for w in raw:gmatch("%S+") do table.insert(parts, w) end
+	local cmd  = parts[1] and parts[1]:lower() or ""
+	local args = {}
+	for i = 2, #parts do table.insert(args, parts[i]) end
+
+	if cmd == "clear" or cmd == "cls" then
+		for _, ch in ipairs(Output:GetChildren()) do
+			if ch:IsA("Frame") then ch:Destroy() end
+		end
+		lineOrder = 0
+		return
+	end
+
+	if cmd == "playerlist" or cmd == "pl" then
+		playerListOpen = not playerListOpen
+		UpdatePanelPosition()
+		PlayerListPanel.Visible = playerListOpen
+		if playerListOpen then
+    BuildPlayerList()
+    PrintOk("Player list opened. Click a name to paste their username.")
+    task.delay(0, function()
+        while playerListOpen do
+            task.wait(3)
+            if playerListOpen then
+                BuildPlayerList()
+            end
+        end
+    end)
+			PrintOk("Player list opened. Click a name to paste their username.")
+		else
+			PrintOk("Player list closed.")
+		end
+		return
+	end
+
+	if cmd == "help" then
+		PrintBlank()
+		PrintLine("  Poseidon Terminal  —  command reference", C.Accent)
+		PrintBlank()
+		PrintLine("  clear / cls          Clear the terminal", C.Text)
+		PrintLine("  playerlist / pl      Toggle player list panel", C.Text)
+		PrintLine("  help                 Show this message", C.Text)
+		PrintLine("  echo <text>          Print text to output", C.Text)
+		PrintLine("  exit                 Close the terminal", C.Text)
+		local any = false
+		for name, data in pairs(Commands) do
+			if not any then
+				PrintBlank()
+				PrintLine("  Loaded commands:", C.Accent)
+				any = true
+			end
+			PrintLine(string.format("  %-16s %s", name, data.desc), C.Text)
+		end
+		if not any then
+			PrintBlank()
+			PrintLine("  No additional commands loaded.", C.Dim)
+		end
+		PrintBlank()
+		return
+	end
+
+	if cmd == "echo" then
+		PrintLine("  " .. table.concat(args, " "), C.Text)
+		return
+	end
+
+	if cmd == "exit" then
+		PrintOk("Closing terminal...")
+		task.delay(0.4, function()
+			Tween(Win, { Size = UDim2.new(0, WIN_W, 0, 0) }, 0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+			task.delay(0.25, function() Gui:Destroy() end)
+		end)
+		return
+	end
+
+	if Commands[cmd] then
+		local ok, err = pcall(Commands[cmd].func, args, PrintLine, PrintOk, PrintErr, PrintWarn, PrintInfo)
+		if not ok then PrintErr(tostring(err)) end
+		return
+	end
+
+	PrintErr("command not found: '" .. cmd .. "'  —  type 'help' to list commands")
+end
+
+-- // ── Input handling ───────────────────────────────────────────────
+
+InputBox.FocusLost:Connect(function(enter)
+	if enter then
+		local t = InputBox.Text
+		InputBox.Text = ""
+		Execute(t)
+	end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe or not InputBox:IsFocused() then return end
+	if input.KeyCode == Enum.KeyCode.Up then
+		histIdx = math.min(histIdx + 1, #history)
+		InputBox.Text = history[histIdx] or ""
+		InputBox.CursorPosition = #InputBox.Text + 1
+	elseif input.KeyCode == Enum.KeyCode.Down then
+		histIdx = math.max(histIdx - 1, 0)
+		InputBox.Text = history[histIdx] or ""
+		InputBox.CursorPosition = #InputBox.Text + 1
+	end
+end)
+
+-- // ── Boot sequence ────────────────────────────────────────────────
+
+local function Boot()
+	local function dp(t, text, color)
+		task.delay(t, function() PrintLine(text, color) end)
+	end
+
+	PrintLine("", C.Text)
+	PrintLine("  ██████╗  ██████╗ ███████╗███████╗██╗██████╗  ██████╗ ███╗  ██╗", C.Accent)
+	PrintLine("  ██╔══██╗██╔═══██╗██╔════╝██╔════╝██║██╔══██╗██╔═══██╗████╗ ██║", C.Accent)
+	PrintLine("  ██████╔╝██║   ██║███████╗█████╗  ██║██║  ██║██║   ██║██╔██╗██║", C.Accent)
+	PrintLine("  ██╔═══╝ ██║   ██║╚════██║██╔══╝  ██║██║  ██║██║   ██║██║╚████║", C.AccentDim)
+	PrintLine("  ██║     ╚██████╔╝███████║███████╗██║██████╔╝╚██████╔╝██║ ╚███║", C.AccentDim)
+	PrintLine("  ╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝╚═════╝  ╚═════╝ ╚═╝  ╚══╝", C.Muted)
+	PrintLine("", C.Text)
+
+	dp(0.05, "  Terminal  v1.0.0             " .. os.date("%Y-%m-%d"), C.Dim)
+	dp(0.10, "  User  :  " .. LocalPlayer.Name, C.Dim)
+	dp(0.15, "  Type 'help' for commands.", C.Muted)
+	dp(0.20, "", C.Text)
+	dp(0.25, "  ──────────────────────────────────────────────────────", C.Muted)
+	dp(0.40, "", C.Text)
+	dp(0.50, "  [  OK  ]  Initializing Poseidon core", C.Green)
+	dp(0.70, "  [  OK  ]  Loading modules", C.Green)
+	dp(0.90, "  [  OK  ]  Session ready", C.Green)
+	dp(1.05, "", C.Text)
+	dp(1.10, "  ──────────────────────────────────────────────────────", C.Muted)
+	dp(1.15, "", C.Text)
+
+	task.delay(1.2, function() InputBox:CaptureFocus() end)
+end
+
+-- // Open animation then boot
+Win.Size = UDim2.new(0, WIN_W, 0, 0)
+Tween(Win, { Size = UDim2.new(0, WIN_W, 0, WIN_H) }, 0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+task.delay(0.1, Boot)
+
+-- // ── Game Registry ─────────────────────────────────────────────────
+
+local GameRegistry = {}
+
+local function RegisterGame(name, aliases, commands)
+	local entry = { name = name, commands = commands }
+	GameRegistry[name:lower()] = entry
+	if aliases then
+		for _, alias in ipairs(aliases) do
+			GameRegistry[alias:lower()] = entry
+		end
+	end
+end
+
+-- // ── Creatures of Sonaria ──────────────────────────────────────────
+
+local CoS = { DrinkLoop = nil, AttackClosestLoop = nil, AttackSpeed = 1.5, FoodLoop = nil, SwimLoop = nil, AutoFarmLoop = nil }
+
+RegisterGame("Creatures of Sonaria", {"cos", "sonaria"}, {
+	{ cmd = "vc", desc = "Set VoiceChat state. Usage: vc" },
+	{ cmd = "keenobserver", desc = "Toggle player ailment observer. Usage: keenobserver" },
+	{ cmd = "autofarm", desc = "Auto farm shooms or shrines. Usage: autofarm shooms / autofarm shrine <name>" },
+	{ cmd = "drink",       desc = "Auto drink from nearest lake. Usage: drink" },
+	{ cmd = "speed",       desc = "Toggle swim state (must have agile swimmer abiliy for it to work). Usage: agileswimmer" },
+	{ cmd = "aggro",       desc = "Toggle aggression state. Usage: aggro" },
+	{ cmd = "lighting",       desc = "Remove all Lighting children except 'Sky'. Usage: lighting clean" },
+	{ cmd = "food", desc = "Collect carcasses. Usage: food bring / food eat" },
+	{ cmd = "attack",      desc = "Attack a player. Usage: attack closest / attack all / attack <name>" },
+	{ cmd = "spectate",    desc = "Spectate the player being attacked. Usage: spectate" },
+	{ cmd = "materials",   desc = "Break all vegetation. Usage: materials all" },
+	{ cmd = "attackspeed", desc = "Set attack fire rate. Usage: attackspeed <0.1 - 1.5>" },
+	{ cmd = "teleport",    desc = "Teleport to a player. Usage: teleport <name>" },
+})
+
+
+
+RegisterCommand("vc", "Toggle your VoiceChat state. Usage: vc", function(args, print, ok, err, warn, info)
+	local adi = LocalPlayer:FindFirstChildWhichIsA("AudioDeviceInput")
+	if not adi then
+		err("AudioDeviceInput not found. You may not have VoiceChat enabled.")
+		return
+	end
+
+	adi.AccessType = Enum.AccessModifierType.Deny
+	adi.Active = true
+	adi.Muted = false
+
+	ok("VoiceChat state set: AccessType=Deny, Active=true, Muted=false")
+end)
+-- // ── Keen Observer ─────────────────────────────────────────────────
+
+-- Build template folder in ReplicatedStorage
+local RS = game:GetService("ReplicatedStorage")
+local KOFolder = RS:FindFirstChild("PoseidonKO") or Instance.new("Folder")
+KOFolder.Name = "PoseidonKO"
+KOFolder.Parent = RS
+
+local function BuildKOTemplate()
+	local existing = KOFolder:FindFirstChild("TemplateKeenObserverUI")
+	if existing then existing:Destroy() end
+
+	local BB = Instance.new("BillboardGui")
+	BB.Name = "TemplateKeenObserverUI"
+	BB.Size = UDim2.new(0, 160, 0, 20)
+	BB.StudsOffset = Vector3.new(0, 3, 0)
+	BB.AlwaysOnTop = true
+	BB.ResetOnSpawn = false
+	BB.MaxDistance = 100
+	BB.Parent = KOFolder
+
+	local Container = Instance.new("Frame")
+	Container.Name = "Container"
+	Container.Size = UDim2.new(1, 0, 0, 0)
+	Container.AutomaticSize = Enum.AutomaticSize.Y
+	Container.BackgroundColor3 = Color3.fromRGB(6, 9, 14)
+	Container.BorderSizePixel = 0
+	Container.Parent = BB
+
+	local ContCorner = Instance.new("UICorner")
+	ContCorner.CornerRadius = UDim.new(0, 6)
+	ContCorner.Parent = Container
+
+	local ContStroke = Instance.new("UIStroke")
+	ContStroke.Thickness = 1
+	ContStroke.Color = Color3.fromRGB(20, 60, 60)
+	ContStroke.Parent = Container
+
+	local ContLayout = Instance.new("UIListLayout")
+	ContLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	ContLayout.Padding = UDim.new(0, 1)
+	ContLayout.Parent = Container
+
+	local ContPad = Instance.new("UIPadding")
+	ContPad.PaddingTop = UDim.new(0, 4)
+	ContPad.PaddingBottom = UDim.new(0, 4)
+	ContPad.PaddingLeft = UDim.new(0, 6)
+	ContPad.PaddingRight = UDim.new(0, 6)
+	ContPad.Parent = Container
+
+	local AccentBar = Instance.new("Frame")
+	AccentBar.Name = "AccentBar"
+	AccentBar.Size = UDim2.new(1, 0, 0, 2)
+	AccentBar.BackgroundColor3 = Color3.fromRGB(0, 210, 180)
+	AccentBar.BorderSizePixel = 0
+	AccentBar.LayoutOrder = 0
+	AccentBar.Parent = Container
+
+	local AccentGrad = Instance.new("UIGradient")
+	AccentGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 105)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 210, 180)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 120, 105)),
+	})
+	AccentGrad.Parent = AccentBar
+
+	local NameRow = Instance.new("Frame")
+	NameRow.Name = "Health"
+	NameRow.Size = UDim2.new(1, 0, 0, 16)
+	NameRow.BackgroundTransparency = 1
+	NameRow.LayoutOrder = 1
+	NameRow.Parent = Container
+
+	local MoverLabel = Instance.new("TextLabel")
+	MoverLabel.Name = "MoverLabel"
+	MoverLabel.Size = UDim2.new(1, 0, 1, 0)
+	MoverLabel.BackgroundTransparency = 1
+	MoverLabel.TextColor3 = Color3.fromRGB(0, 210, 180)
+	MoverLabel.TextSize = 10
+	MoverLabel.Font = Enum.Font.GothamBold
+	MoverLabel.Text = "Player"
+	MoverLabel.TextXAlignment = Enum.TextXAlignment.Left
+	MoverLabel.Parent = NameRow
+
+	local HealthRow = Instance.new("Frame")
+HealthRow.Name = "HealthRow"
+HealthRow.Size = UDim2.new(1, 0, 0, 8)
+HealthRow.BackgroundColor3 = Color3.fromRGB(20, 30, 25)
+HealthRow.BorderSizePixel = 0
+HealthRow.LayoutOrder = 2
+HealthRow.Parent = Container
+
+local HealthBarCorner = Instance.new("UICorner")
+HealthBarCorner.CornerRadius = UDim.new(0, 3)
+HealthBarCorner.Parent = HealthRow
+
+local HealthBar = Instance.new("Frame")
+HealthBar.Name = "HealthBar"
+HealthBar.Size = UDim2.new(1, 0, 1, 0)
+HealthBar.BackgroundColor3 = Color3.fromRGB(50, 220, 150)
+HealthBar.BorderSizePixel = 0
+HealthBar.Parent = HealthRow
+
+local HealthBarCorner2 = Instance.new("UICorner")
+HealthBarCorner2.CornerRadius = UDim.new(0, 3)
+HealthBarCorner2.Parent = HealthBar
+
+	local Div = Instance.new("Frame")
+	Div.Name = "Divider"
+	Div.Size = UDim2.new(1, 0, 0, 1)
+	Div.BackgroundColor3 = Color3.fromRGB(20, 60, 60)
+	Div.BorderSizePixel = 0
+	Div.LayoutOrder = 3
+	Div.Parent = Container
+
+	local Ailments = Instance.new("Frame")
+	Ailments.Name = "Ailments"
+	Ailments.Size = UDim2.new(1, 0, 0, 0)
+	Ailments.AutomaticSize = Enum.AutomaticSize.Y
+	Ailments.BackgroundTransparency = 1
+	Ailments.LayoutOrder = 4
+	Ailments.Parent = Container
+
+	local AilLayout = Instance.new("UIListLayout")
+	AilLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	AilLayout.Padding = UDim.new(0, 1)
+	AilLayout.Parent = Ailments
+
+	local DefaultBtn = Instance.new("ImageButton")
+	DefaultBtn.Name = "Default"
+	DefaultBtn.Size = UDim2.new(1, 0, 0, 13)
+	DefaultBtn.BackgroundColor3 = Color3.fromRGB(10, 14, 20)
+	DefaultBtn.BorderSizePixel = 0
+	DefaultBtn.AutoButtonColor = false
+	DefaultBtn.Parent = Ailments
+
+	local BtnCorner = Instance.new("UICorner")
+	BtnCorner.CornerRadius = UDim.new(0, 3)
+	BtnCorner.Parent = DefaultBtn
+
+	local BtnStroke = Instance.new("UIStroke")
+	BtnStroke.Thickness = 1
+	BtnStroke.Color = Color3.fromRGB(20, 60, 60)
+	BtnStroke.Parent = DefaultBtn
+
+	local BtnLabel = Instance.new("TextLabel")
+	BtnLabel.Name = "AilmentLabel"
+	BtnLabel.Size = UDim2.new(1, 0, 1, 0)
+	BtnLabel.BackgroundTransparency = 1
+	BtnLabel.TextColor3 = Color3.fromRGB(70, 150, 140)
+	BtnLabel.TextSize = 9
+	BtnLabel.Font = Enum.Font.Code
+	BtnLabel.Text = "Default"
+	BtnLabel.TextXAlignment = Enum.TextXAlignment.Left
+	BtnLabel.Parent = DefaultBtn
+
+	return BB
+end
+
+BuildKOTemplate()
+
+local CoS_KOActive = false
+local CoS_KOConnections = {}
+local KOHealthConnections = {}
+
+local function CleanupKO()
+	CoS_KOActive = false
+	for _, conn in ipairs(CoS_KOConnections) do
+		pcall(function() conn:Disconnect() end)
+	end
+	CoS_KOConnections = {}
+	KOHealthConnections = {}
+
+	local WorkspaceGui = LocalPlayer.PlayerGui:FindFirstChild("WorkspaceGui")
+	if WorkspaceGui then
+		for _, gui in ipairs(WorkspaceGui:GetChildren()) do
+			if gui.Name:sub(-#"KeenObserverUI") == "KeenObserverUI" then
+				gui:Destroy()
+			end
+		end
+	end
+end
+
+local function SpawnKOForPlayer(plr, WorkspaceGui)
+	pcall(function()
+		if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then return end
+
+		local guiName = plr.Name .. "KeenObserverUI"
+
+		local existing = WorkspaceGui:FindFirstChild(guiName)
+		if existing then existing:Destroy() end
+
+		if KOHealthConnections[plr.Name] then
+			pcall(function() KOHealthConnections[plr.Name]:Disconnect() end)
+			KOHealthConnections[plr.Name] = nil
+		end
+
+		local template = KOFolder:FindFirstChild("TemplateKeenObserverUI")
+		if not template then return end
+
+		local clone = template:Clone()
+		clone.Name = guiName
+		clone.Adornee = plr.Character:FindFirstChild("HumanoidRootPart")
+		clone.MaxDistance = 100
+		clone.Size = UDim2.new(0, 160, 0, 200)
+		clone.Parent = WorkspaceGui
+
+		local moverLabel = clone.Container.Health:FindFirstChild("MoverLabel")
+		if moverLabel then
+			moverLabel.Text = plr.DisplayName .. "  @" .. plr.Name
+		end
+
+		local healthBar = clone.Container.HealthRow:FindFirstChild("HealthBar")
+
+		local WsChars = workspace:FindFirstChild("Characters")
+		local charFolder = WsChars and WsChars:FindFirstChild(plr.Name)
+		local dataFolder = charFolder and charFolder:FindFirstChild("Data")
+		local ailFolder  = charFolder and charFolder:FindFirstChild("Ailments")
+
+		local maxH = 10000 -- adjust if you know the actual max hp
+local function UpdateHealth()
+    if not healthBar or not healthBar.Parent then return end
+    if dataFolder then
+        local h = dataFolder:GetAttribute("h")
+        if h then
+            local pct = math.clamp(h / maxH, 0, 1)
+            healthBar.Size = UDim2.new(pct, 0, 1, 0)
+            -- colour shifts red as health drops
+            local g = math.floor(220 * pct)
+            local r = math.floor(255 * (1 - pct))
+            healthBar.BackgroundColor3 = Color3.fromRGB(r, g + 50, 50)
+        end
+    end
+end
+
+		UpdateHealth()
+
+		if dataFolder then
+			local conn = dataFolder.AttributeChanged:Connect(function(attr)
+				if attr == "h" then
+					task.defer(UpdateHealth)
+				end
+			end)
+			KOHealthConnections[plr.Name] = conn
+			table.insert(CoS_KOConnections, conn)
+		end
+
+		local AilmentsFrame = clone.Container:FindFirstChild("Ailments")
+		if AilmentsFrame then
+			for _, ch in ipairs(AilmentsFrame:GetChildren()) do
+				if ch:IsA("ImageButton") then ch:Destroy() end
+			end
+
+			if ailFolder then
+				local order = 0
+				for attrName, attrVal in pairs(ailFolder:GetAttributes()) do
+					-- Only show ailments with a value greater than 0
+					if attrVal ~= nil then
+						order += 1
+						local DefaultBtn = KOFolder.TemplateKeenObserverUI.Container.Ailments:FindFirstChild("Default")
+						if not DefaultBtn then continue end
+
+						local btn = DefaultBtn:Clone()
+						btn.Name = attrName
+						btn.LayoutOrder = order
+
+						local lbl = btn:FindFirstChild("AilmentLabel")
+						if lbl then lbl.Text = attrName end
+
+						btn.Parent = AilmentsFrame
+					end
+				end
+			end
+		end
+	end)
+end
+
+RegisterCommand("keenobserver", "Toggle player ailment observer. Usage: keenobserver", function(args, print, ok, err, warn, info)
+	if CoS_KOActive then
+		CleanupKO()
+		ok("Keen Observer stopped.")
+		return
+	end
+
+	local WorkspaceGui = LocalPlayer.PlayerGui:FindFirstChild("WorkspaceGui")
+	if not WorkspaceGui then
+		err("WorkspaceGui not found in PlayerGui.")
+		return
+	end
+
+	CoS_KOActive = true
+	ok("Keen Observer started.")
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer then
+			SpawnKOForPlayer(plr, WorkspaceGui)
+		end
+	end
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer then
+			local conn = plr.CharacterAdded:Connect(function()
+				task.wait(1)
+				if CoS_KOActive then
+					SpawnKOForPlayer(plr, WorkspaceGui)
+				end
+			end)
+			table.insert(CoS_KOConnections, conn)
+		end
+	end
+
+	local addConn = Players.PlayerAdded:Connect(function(plr)
+		task.wait(2)
+		if CoS_KOActive then
+			local conn = plr.CharacterAdded:Connect(function()
+				task.wait(1)
+				if CoS_KOActive then
+					SpawnKOForPlayer(plr, WorkspaceGui)
+				end
+			end)
+			table.insert(CoS_KOConnections, conn)
+			SpawnKOForPlayer(plr, WorkspaceGui)
+		end
+	end)
+	table.insert(CoS_KOConnections, addConn)
+
+	local removeConn = Players.PlayerRemoving:Connect(function(plr)
+		local guiName = plr.Name .. "KeenObserverUI"
+		local gui = WorkspaceGui:FindFirstChild(guiName)
+		if gui then gui:Destroy() end
+	end)
+	table.insert(CoS_KOConnections, removeConn)
+
+	spawn(function()
+		while CoS_KOActive do
+			task.wait(3)
+			if CoS_KOActive then
+				for _, plr in ipairs(Players:GetPlayers()) do
+					if plr ~= LocalPlayer then
+						SpawnKOForPlayer(plr, WorkspaceGui)
+					end
+				end
+			end
+		end
+	end)
+end)
+
+RegisterCommand("keenobserver", "Toggle player ailment observer. Usage: keenobserver", function(args, print, ok, err, warn, info)
+    if CoS_KOActive then
+        CleanupKO()
+        ok("Keen Observer stopped.")
+        return
+    end
+
+    local WorkspaceGui = LocalPlayer.PlayerGui:FindFirstChild("WorkspaceGui")
+    if not WorkspaceGui then
+        err("WorkspaceGui not found in PlayerGui.")
+        return
+    end
+
+    CoS_KOActive = true
+    ok("Keen Observer started.")
+
+    -- Spawn for all current players
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            SpawnKOForPlayer(plr, WorkspaceGui)
+        end
+    end
+
+    -- Watch for character changes and new players
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local conn = plr.CharacterAdded:Connect(function()
+                task.wait(1)
+                if CoS_KOActive then
+                    SpawnKOForPlayer(plr, WorkspaceGui)
+                end
+            end)
+            table.insert(CoS_KOConnections, conn)
+        end
+    end
+
+    local addConn = Players.PlayerAdded:Connect(function(plr)
+        task.wait(2)
+        if CoS_KOActive then
+            local conn = plr.CharacterAdded:Connect(function()
+                task.wait(1)
+                if CoS_KOActive then
+                    SpawnKOForPlayer(plr, WorkspaceGui)
+                end
+            end)
+            table.insert(CoS_KOConnections, conn)
+            SpawnKOForPlayer(plr, WorkspaceGui)
+        end
+    end)
+    table.insert(CoS_KOConnections, addConn)
+
+    local removeConn = Players.PlayerRemoving:Connect(function(plr)
+        local guiName = plr.Name .. "KeenObserverUI"
+        local gui = WorkspaceGui:FindFirstChild(guiName)
+        if gui then gui:Destroy() end
+    end)
+    table.insert(CoS_KOConnections, removeConn)
+
+    -- Refresh ailments every 3 seconds
+    spawn(function()
+        while CoS_KOActive do
+            task.wait(3)
+            if CoS_KOActive then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= LocalPlayer then
+                        SpawnKOForPlayer(plr, WorkspaceGui)
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+RegisterCommand("speed", "Toggle swim state (must have agile swimmer abiliy for it to work). Usage: agileswimmer", function(args, print, ok, err, warn, info)
+	if CoS.LakeDragLoop then
+		CoS.LakeDragLoop = nil
+		ok("Swim stopped.")
+		return
+	end
+
+	ok("Swim started.")
+	CoS.LakeDragLoop = true
+
+	spawn(function()
+		local SwimRemote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Swim")
+		while CoS.LakeDragLoop do
+			pcall(function()
+				SwimRemote:FireServer(true)
+			end)
+			task.wait(0.05)
+		end
+		ok("Swim stopped.")
+	end)
+end)
+
+local CoS_Shrines = {
+	hellion  = Vector3.new(-1296, 252,   383),
+	angelic  = Vector3.new( 2143, 189, -1524),
+	garra    = Vector3.new( 2334, 260,  1337),
+	verdant  = Vector3.new(  312, 329,  2243),
+	boreal   = Vector3.new(-2259, 384, -1061),
+	eigion   = Vector3.new( 1013,-502,   517),
+	novus    = Vector3.new( 1132, 860,   821),
+	ardor    = Vector3.new(  777, 205, -3425),
+}
+
+RegisterCommand("autofarm", "Auto farm shooms or shrines. Usage: autofarm shooms / autofarm shrine <name>", function(args, print, ok, err, warn, info)
+	local mode = args[1] and args[1]:lower()
+
+	if not mode then
+		err("Usage: autofarm shooms / autofarm shrine <name>")
+		return
+	end
+
+	if CoS.AutoFarmLoop then
+		CoS.AutoFarmLoop = nil
+		ok("Autofarm stopped.")
+		return
+	end
+
+	if mode == "shooms" then
+		ok("Autofarm shooms started.")
+		CoS.AutoFarmLoop = true
+
+		spawn(function()
+			local VIM = game:GetService("VirtualInputManager")
+
+			while CoS.AutoFarmLoop do
+				local ShoomPiles = workspace:WaitForChild("Interactions"):WaitForChild("ShoomPiles")
+				local piles = ShoomPiles:GetChildren()
+
+				if #piles == 0 then
+					info("No shoom piles found, waiting...")
+					task.wait(5)
+					continue
+				end
+
+				for _, shoom in ipairs(piles) do
+					if not CoS.AutoFarmLoop then break end
+
+					local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if not root then task.wait(1) continue end
+
+					local shoomPos
+					if shoom:IsA("Model") and shoom.PrimaryPart then
+						shoomPos = shoom.PrimaryPart.Position
+					elseif shoom:IsA("BasePart") then
+						shoomPos = shoom.Position
+					end
+
+					if shoomPos then
+						root.CFrame = CFrame.new(shoomPos + Vector3.new(0, 100, 0))
+						task.wait(0.6)
+						root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+						if root then
+							root.CFrame = CFrame.new(shoomPos + Vector3.new(0, 3, 0))
+						end
+					end
+
+					info("Collecting: " .. shoom.Name)
+
+					local timer = 0
+					while timer < 0.8 do
+						if not CoS.AutoFarmLoop then break end
+						VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+						task.wait(0.05)
+						VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+						task.wait(0.05)
+						timer += 0.1
+					end
+				end
+
+				info("All shooms collected, restarting loop...")
+				task.wait(2)
+			end
+
+			ok("Autofarm shooms stopped.")
+		end)
+
+	elseif mode == "shrine" then
+		local shrineName = args[2] and args[2]:lower()
+
+		if not shrineName then
+			err("Usage: autofarm shrine <name>")
+			info("Available: hellion, angelic, garra, verdant, boreal, eigion, novus, ardor")
+			return
+		end
+
+		local pos = CoS_Shrines[shrineName]
+		if not pos then
+			err("Unknown shrine: '" .. shrineName .. "'")
+			info("Available: hellion, angelic, garra, verdant, boreal, eigion, novus, ardor")
+			return
+		end
+
+		ok("Autofarm shrine started: " .. shrineName)
+		CoS.AutoFarmLoop = true
+
+		spawn(function()
+			local VIM = game:GetService("VirtualInputManager")
+
+			while CoS.AutoFarmLoop do
+				local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if not root then
+					task.wait(1)
+					continue
+				end
+
+				root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+				task.wait(0.5)
+
+				VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+				task.wait(0.1)
+				VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+
+				info("Shrine interacted: " .. shrineName)
+				task.wait(1.5)
+			end
+
+			ok("Autofarm shrine stopped.")
+		end)
+
+	else
+		err("Unknown mode '" .. mode .. "'.  Usage: autofarm shooms / autofarm shrine <name>")
+	end
+end)
+
+RegisterCommand("lighting", "Remove all Lighting children except 'Sky'. Usage: lighting clean", function(args, print, ok, err, warn, info)
+	if args[1] and args[1]:lower() == "clean" then
+		local Lighting = game:GetService("Lighting")
+		local removed = 0
+		for _, child in ipairs(Lighting:GetChildren()) do
+			if child.Name ~= "Sky" then
+				child:Destroy()
+				removed += 1
+			end
+		end
+		ok("Removed " .. removed .. " object(s) from Lighting.")
+	else
+		err("Usage: lighting clean")
+	end
+end)
+
+RegisterCommand("teleport", "Teleport to a player. Usage: teleport <name>", function(args, print, ok, err, warn, info)
+	if #args == 0 then
+		err("Usage: teleport <name>")
+		return
+	end
+
+	local query = table.concat(args, " "):lower()
+	local target = nil
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer and plr.Name:lower():find(query, 1, true) then
+			target = plr
+			break
+		end
+	end
+
+	if not target then
+		err("Player not found: " .. query)
+		return
+	end
+
+	local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		err("Your character was not found.")
+		return
+	end
+
+	if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+		err("Target character not found.")
+		return
+	end
+
+	local targetPos = target.Character.HumanoidRootPart.Position
+	root.CFrame = CFrame.new(targetPos + Vector3.new(0, 60, 0))
+	ok("Teleported to " .. target.Name)
+end)
+
+RegisterCommand("drink", "Auto drink from nearest lake. Usage: drink", function(args, print, ok, err, warn, info)
+	if CoS.DrinkLoop then
+		CoS.DrinkLoop = nil
+		ok("Auto drink stopped.")
+	else
+		ok("Auto drink started.")
+		CoS.DrinkLoop = true
+		spawn(function()
+			local Remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("DrinkRemote")
+			local Lakes = workspace:WaitForChild("Interactions"):WaitForChild("Lakes")
+			while CoS.DrinkLoop do
+				pcall(function()
+					local lake = Lakes:FindFirstChildWhichIsA("Model")
+					if lake then Remote:FireServer(lake) end
+				end)
+				task.wait(0.1)
+			end
+		end)
+	end
+end)
+
+RegisterCommand("aggro", "Toggle aggression state. Usage: aggro", function(args, print, ok, err, warn, info)
+	if CoS.AggroLoop then
+		CoS.AggroLoop = nil
+		ok("Aggro stopped.")
+		return
+	end
+
+	ok("Aggro started.")
+	CoS.AggroLoop = true
+
+	spawn(function()
+		local StateAilment = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("StateAilment")
+		while CoS.AggroLoop do
+			pcall(function()
+				StateAilment:FireServer("Aggression")
+			end)
+			info("Aggression fired.")
+			local waited = 0
+			while CoS.AggroLoop and waited < 15 do
+				task.wait(1)
+				waited += 1
+			end
+		end
+		ok("Aggro stopped.")
+	end)
+end)
+
+RegisterCommand("food", "Collect carcasses. Usage: food bring / food eat", function(args, print, ok, err, warn, info)
+	local mode = args[1] and args[1]:lower()
+
+	if not mode then
+		err("Usage: food bring / food eat")
+		return
+	end
+
+	if CoS.FoodLoop then
+		CoS.FoodLoop = nil
+		ok("Food collection stopped.")
+		return
+	end
+
+	local validNames = {
+		["Carnivore Carcass"] = true,
+		["Herbivore Carcass"] = true,
+		["Plant Carcass"] = true,
+	}
+
+	if mode == "bring" then
+		ok("Food bring started.")
+		CoS.FoodLoop = true
+
+		spawn(function()
+			local VIM = game:GetService("VirtualInputManager")
+			local Food = workspace:WaitForChild("Interactions"):WaitForChild("Food")
+
+			local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if not root then
+				err("Character not found.")
+				CoS.FoodLoop = nil
+				return
+			end
+
+			local originalCFrame = root.CFrame
+
+			for _, item in ipairs(Food:GetChildren()) do
+				if not CoS.FoodLoop then break end
+				if item:IsA("Model") and validNames[item.Name] then
+					root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if not root then break end
+
+					if item.PrimaryPart then
+						root.CFrame = item.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+					end
+
+					local targetCFrame = root.CFrame * CFrame.new(0, 0, 10)
+					local tween = TweenService:Create(root, TweenInfo.new(0.5, Enum.EasingStyle.Linear), { CFrame = targetCFrame })
+					tween:Play()
+					tween.Completed:Wait()
+
+					task.wait(0.8)
+
+					VIM:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+					task.wait(0.05)
+					VIM:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+
+					task.wait(1)
+
+					root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if root then root.CFrame = originalCFrame end
+
+					task.wait(2)
+
+					VIM:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+					task.wait(0.05)
+					VIM:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+
+					task.wait(1)
+					info("Collected and dropped: " .. item.Name)
+				end
+			end
+
+			ok("All carcasses brought.")
+			CoS.FoodLoop = nil
+		end)
+
+	elseif mode == "eat" then
+		ok("Food eat started.")
+		CoS.FoodLoop = true
+
+		spawn(function()
+			local VIM = game:GetService("VirtualInputManager")
+			local Food = workspace:WaitForChild("Interactions"):WaitForChild("Food")
+			local FoodRemote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Food")
+
+			local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if not root then
+				err("Character not found.")
+				CoS.FoodLoop = nil
+				return
+			end
+
+			local originalCFrame = root.CFrame
+
+			local dietType = nil
+			pcall(function()
+				local hud = LocalPlayer.PlayerGui:WaitForChild("HUDGui", 5)
+				local label = hud.BottomFrame.Other.DietType.HoverLabel
+				dietType = label.Text
+			end)
+
+			info("Diet detected: " .. (dietType or "unknown"))
+
+			if dietType == "Herbivore" then
+				local foodTypes = {"Fruit", "Grass", "Berries"}
+
+				local foodItems = {}
+				for _, foodName in ipairs(foodTypes) do
+					local item = Food:FindFirstChild(foodName)
+					if item then foodItems[foodName] = item end
+				end
+
+				while CoS.FoodLoop do
+					for _, foodName in ipairs(foodTypes) do
+						if not CoS.FoodLoop then break end
+
+						local foodItem = foodItems[foodName] or Food:FindFirstChild(foodName)
+						if not foodItem then
+							warn("Could not find: " .. foodName)
+							task.wait(1)
+							continue
+						end
+
+						root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+						if not root then break end
+
+						local targetPos = foodItem:IsA("Model") and foodItem.PrimaryPart and foodItem.PrimaryPart.Position
+							or foodItem:IsA("BasePart") and foodItem.Position
+
+						if targetPos then
+							root.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+						end
+
+						task.wait(0.5)
+
+						pcall(function()
+							FoodRemote:FireServer(foodItem)
+						end)
+
+						info("Ate: " .. foodName)
+
+						local waited = 0
+						while CoS.FoodLoop and waited < 5 do
+							task.wait(1)
+							waited += 1
+						end
+					end
+
+					root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if root then root.CFrame = originalCFrame end
+					info("Returned to original position.")
+
+					task.wait(1)
+				end
+
+			elseif dietType == "Carnivore" or dietType == "Omnivore" then
+				for _, item in ipairs(Food:GetChildren()) do
+					if not CoS.FoodLoop then break end
+					if item:IsA("Model") and validNames[item.Name] then
+						root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+						if not root then break end
+
+						if item.PrimaryPart then
+							root.CFrame = item.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+						end
+
+						task.wait(0.3)
+
+						local eatTweenTarget = root.CFrame * CFrame.new(0, 0, 8)
+						local eatTween = TweenService:Create(root, TweenInfo.new(0.4, Enum.EasingStyle.Linear), { CFrame = eatTweenTarget })
+						eatTween:Play()
+						eatTween.Completed:Wait()
+
+						task.wait(0.2)
+
+						VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+						task.wait(0.05)
+						VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+
+						info("Eating: " .. item.Name)
+
+						local waited = 0
+						while CoS.FoodLoop and waited < 15 do
+							task.wait(1)
+							waited += 1
+						end
+
+						if not CoS.FoodLoop then break end
+
+						root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+						if root then root.CFrame = originalCFrame end
+
+						task.wait(0.5)
+					end
+				end
+
+				ok("All carcasses eaten.")
+				CoS.FoodLoop = nil
+
+			else
+				err("Could not determine diet type: '" .. (dietType or "nil") .. "'")
+				CoS.FoodLoop = nil
+			end
+		end)
+
+	else
+		err("Unknown mode '" .. mode .. "'.  Usage: food bring / food eat")
+	end
+end)
+
+RegisterCommand("attack", "Attack a player. Usage: attack closest / attack all / attack <name>", function(args, print, ok, err, warn, info)
+	local RunService = game:GetService("RunService")
+	local Remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
+	local Workspace = game:GetService("Workspace")
+
+	local mode = args[1] and args[1]:lower()
+
+	if not mode then
+		err("Usage: attack closest / attack all / attack <name>")
+		return
+	end
+
+	if CoS.AttackClosestLoop then
+		CoS.AttackClosestLoop = nil
+		if CoS.Highlight then CoS.Highlight:Destroy() CoS.Highlight = nil end
+	end
+
+	if mode == "off" then
+		ok("Attack stopped.")
+		return
+	end
+
+	local function startLoop(getTarget)
+		CoS.AttackClosestLoop = true
+		local lastTarget = nil
+		spawn(function()
+			while CoS.AttackClosestLoop do
+				RunService.Heartbeat:Wait()
+				task.wait(CoS.AttackSpeed)
+				pcall(function()
+					local target, targetChar = getTarget()
+
+					if target and targetChar then
+						Remotes:WaitForChild("CharactersDamageRemote"):FireServer({ targetChar })
+
+						if target ~= lastTarget then
+							lastTarget = target
+							info("Attacking: " .. (type(target) == "string" and target or target.Name))
+						end
+
+						if not CoS.Highlight then
+							local highlight = Instance.new("Highlight")
+							highlight.Name = "AttackClosestHighlight"
+							highlight.FillColor = Color3.fromRGB(0, 136, 204)
+							highlight.FillTransparency = 0.5
+							highlight.OutlineColor = Color3.fromRGB(153, 204, 255)
+							highlight.OutlineTransparency = 0.3
+							highlight.Parent = Workspace
+							CoS.Highlight = highlight
+						end
+						CoS.Highlight.Adornee = targetChar
+					end
+				end)
+			end
+
+			if CoS.Highlight then
+				CoS.Highlight:Destroy()
+				CoS.Highlight = nil
+			end
+		end)
+	end
+
+	if mode == "closest" then
+		ok("Attacking closest player.")
+		startLoop(function()
+			local closest, closestChar = nil, nil
+			local shortestDist = math.huge
+			if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+				for _, plr in ipairs(Players:GetPlayers()) do
+					if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+						local dist = (plr.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+						if dist < shortestDist then
+							shortestDist = dist
+							closest = plr
+							closestChar = plr.Character
+						end
+					end
+				end
+			end
+			return closest, closestChar
+		end)
+
+	elseif mode == "all" then
+		ok("Attacking all players.")
+		CoS.AttackClosestLoop = true
+		spawn(function()
+			while CoS.AttackClosestLoop do
+				task.wait(CoS.AttackSpeed)
+				pcall(function()
+					local targets = {}
+					for _, plr in ipairs(Players:GetPlayers()) do
+						if plr ~= LocalPlayer and plr.Character then
+							table.insert(targets, plr.Character)
+						end
+					end
+					if #targets > 0 then
+						Remotes:WaitForChild("CharactersDamageRemote"):FireServer(targets)
+					end
+				end)
+			end
+			if CoS.Highlight then CoS.Highlight:Destroy() CoS.Highlight = nil end
+		end)
+
+	else
+		local query = table.concat(args, " "):lower()
+		local target = nil
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= LocalPlayer and plr.Name:lower():find(query, 1, true) then
+				target = plr
+				break
+			end
+		end
+		if not target then
+			err("Player not found: " .. query)
+			return
+		end
+		ok("Attacking: " .. target.Name)
+		startLoop(function()
+			return target, target.Character
+		end)
+	end
+end)
+
+RegisterCommand("attackspeed", "Set attack fire rate. Usage: attackspeed <0.1 - 1.5>", function(args, print, ok, err, warn, info)
+	local val = tonumber(args[1])
+	if not val then
+		err("Usage: attackspeed <0.1 - 1.5>")
+		return
+	end
+	if val < 0.1 or val > 1.5 then
+		err("Value must be between 0.1 and 1.5")
+		return
+	end
+	CoS.AttackSpeed = val
+	ok("Attack speed set to " .. val)
+end)
+
+RegisterCommand("materials", "Break all vegetation. Usage: materials all", function(args, print, ok, err, warn, info)
+	if args[1] == "all" then
+		ok("Breaking all vegetation...")
+		local Remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ResourceDamageRemote")
+		local Vegetation = workspace:WaitForChild("Terrain"):WaitForChild("Vegetation")
+		local count = 0
+
+		spawn(function()
+			for _, category in ipairs(Vegetation:GetChildren()) do
+				for _, item in ipairs(category:GetChildren()) do
+					count += 1
+					spawn(function()
+						for i = 1, 10 do
+							pcall(function()
+								Remote:FireServer({ item })
+							end)
+							task.wait()
+						end
+					end)
+				end
+			end
+			ok("Fired remote on " .. count .. " vegetation objects simultaneously.")
+		end)
+	else
+		err("Usage: materials all")
+	end
+end)
+
+RegisterCommand("spectate", "Spectate the player being attacked. Usage: spectate", function(args, print, ok, err, warn, info)
+	if CoS.ViewLoop then
+		CoS.ViewLoop = nil
+		ok("Spectate stopped.")
+		game:GetService("Workspace").CurrentCamera.CameraType = Enum.CameraType.Custom
+		if CoS.CamPart then CoS.CamPart:Destroy() CoS.CamPart = nil end
+	else
+		ok("Spectate started.")
+		CoS.ViewLoop = true
+		spawn(function()
+			local Workspace = game:GetService("Workspace")
+			local RunService = game:GetService("RunService")
+			local Mouse = LocalPlayer:GetMouse()
+
+			local camPart = Instance.new("Part")
+			camPart.Name = "PoseidonCamPart"
+			camPart.Size = Vector3.new(0.1, 0.1, 0.1)
+			camPart.Anchored = true
+			camPart.CanCollide = false
+			camPart.Transparency = 1
+			camPart.Parent = Workspace
+			CoS.CamPart = camPart
+
+			Workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+
+			local yaw = 0
+			local pitch = -45
+			local sensitivity = 0.4
+			local distance = 40
+			local lastX = Mouse.X
+			local lastY = Mouse.Y
+
+			local scrollConn = Mouse.WheelForward:Connect(function()
+				distance = math.clamp(distance - 5, 5, 200)
+			end)
+			local scrollBackConn = Mouse.WheelBackward:Connect(function()
+				distance = math.clamp(distance + 5, 5, 200)
+			end)
+
+			while CoS.ViewLoop do
+				RunService.Heartbeat:Wait()
+				pcall(function()
+					local holding = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+					if holding then
+						local dx = Mouse.X - lastX
+						local dy = Mouse.Y - lastY
+						yaw   = yaw   - dx * sensitivity
+						pitch = math.clamp(pitch - dy * sensitivity, -89, 0)
+					end
+					lastX = Mouse.X
+					lastY = Mouse.Y
+
+					if CoS.Highlight and CoS.Highlight.Adornee and CoS.Highlight.Adornee:FindFirstChild("HumanoidRootPart") then
+						local targetPos = CoS.Highlight.Adornee.HumanoidRootPart.Position
+						local yawRad   = math.rad(yaw)
+						local pitchRad = math.rad(pitch)
+						local offset = Vector3.new(
+							distance * math.cos(pitchRad) * math.sin(yawRad),
+							distance * math.sin(-pitchRad),
+							distance * math.cos(pitchRad) * math.cos(yawRad)
+						)
+						local camPos = targetPos + offset
+						camPart.CFrame = CFrame.new(camPos)
+						Workspace.CurrentCamera.CFrame = CFrame.new(camPos, targetPos)
+					end
+				end)
+			end
+
+			scrollConn:Disconnect()
+			scrollBackConn:Disconnect()
+			Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+			if CoS.CamPart then CoS.CamPart:Destroy() CoS.CamPart = nil end
+		end)
+	end
+end)
+
+-- // ── Prison Life ───────────────────────────────────────────────────
+
+RegisterGame("Prison Life", {"prison", "prisonlife"}, {
+
+})
+
+-- // ── Criminality ───────────────────────────────────────────────────
+
+RegisterGame("Criminality", {"crim", "criminality"}, {
+
+})
+
+-- // ── Game commands ─────────────────────────────────────────────────
+
+RegisterCommand("games", "List all supported games", function(args, print, ok, err, warn, info)
+	PrintBlank()
+	PrintLine("  Supported Games", C.Accent)
+	PrintBlank()
+	local seen = {}
+	for key, entry in pairs(GameRegistry) do
+		if not seen[entry.name] then
+			seen[entry.name] = true
+			PrintLine("  " .. entry.name .. "   " .. tostring(#entry.commands) .. " Command(s)", C.Text)
+		end
+	end
+	PrintBlank()
+	PrintLine("  Usage: game <name>   —   e.g.  game cos", C.Dim)
+	PrintBlank()
+end)
+
+RegisterCommand("game", "Show commands for a supported game. Usage: game <name>", function(args, print, ok, err, warn, info)
+	if #args == 0 then
+		PrintErr("Usage: game <name>  —  e.g.  game prison life")
+		return
+	end
+
+	local query = table.concat(args, " "):lower()
+	local entry = GameRegistry[query]
+
+	if not entry then
+		PrintErr("Game not found: '" .. query .. "'  —  type 'games' to list supported games")
+		return
+	end
+
+	PrintBlank()
+	PrintLine("  " .. entry.name, C.Accent)
+	PrintDiv()
+
+	if #entry.commands == 0 then
+		PrintLine("  No commands registered yet for this game.", C.Dim)
+	else
+		for _, c in ipairs(entry.commands) do
+			PrintLine(string.format("  %-20s %s", c.cmd, c.desc), C.Text)
+		end
+	end
+
+	PrintBlank()
+end)
+
+-- // ── Public API ───────────────────────────────────────────────────
+return {
+	Print           = PrintLine,
+	PrintOk         = PrintOk,
+	PrintErr        = PrintErr,
+	PrintWarn       = PrintWarn,
+	PrintInfo       = PrintInfo,
+	PrintBlank      = PrintBlank,
+	PrintDivider    = PrintDiv,
+	Execute         = Execute,
+	RegisterCommand = RegisterCommand,
+	Colors          = C,
+}
